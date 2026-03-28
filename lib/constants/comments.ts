@@ -1,0 +1,17 @@
+export const COMMENT_TEMPLATES = [
+  "This takes me back!",
+  "What a beautiful moment.",
+  "Love this vibe so much.",
+  "So nostalgic, I love it.",
+  "This is everything.",
+  "Wow, what a memory.",
+  "The lighting here is perfect.",
+  "I can feel the warmth in this.",
+  "Timeless.",
+  "This is gorgeous.",
+  "Honestly one of my favorites.",
+  "The energy here is unreal.",
+  "I wish I was there.",
+  "Something about this just hits different.",
+  "Pure magic.",
+]
