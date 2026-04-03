@@ -22,17 +22,11 @@ export default function AppPage() {
   )
 
   return (
-    <div
-      className="min-h-screen"
-      style={{
-        background: "linear-gradient(160deg, #6E8A9E 0%, #637A65 42%, #A67C52 100%)",
-        backgroundAttachment: "fixed",
-      }}
-    >
+    <div className="min-h-screen" style={{ background: "#C0DDDA" }}>
       <AppHeader />
 
-      <main className="relative z-10 max-w-5xl mx-auto px-6 pt-28 pb-20 flex flex-col gap-16">
-        <div className="lg:max-w-xs">
+      <main className="relative z-10 w-full max-w-screen-2xl mx-auto px-4 sm:px-8 pt-28 pb-20 flex flex-col gap-16">
+        <div className="w-full sm:max-w-sm">
           <UploadPanel onMemoryCreated={handleMemoryCreated} />
         </div>
 
@@ -42,14 +36,14 @@ export default function AppPage() {
               <Spinner />
             </div>
           ) : error ? (
-            <p className="font-sans text-xs tracking-widest uppercase text-red-200/80 py-8">{error}</p>
+            <p className="font-sans text-xs tracking-widest uppercase text-[var(--foreground)]/60 py-8">{error}</p>
           ) : (
             <MemoryGrid memories={memories} />
           )}
         </section>
       </main>
 
-      {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
+{toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </div>
   )
 }

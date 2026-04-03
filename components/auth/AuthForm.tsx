@@ -45,21 +45,20 @@ export function AuthForm() {
   }
 
   const inputClass =
-    "w-full bg-transparent border-0 border-b border-[var(--film-cream)]/30 text-[var(--film-cream)] placeholder:text-[var(--film-dusk)] focus:outline-none focus:border-[var(--film-cream)]/70 py-3 text-sm font-sans tracking-wide transition-colors text-editorial"
+    "w-full bg-[var(--box-bg)] border border-[var(--border)] rounded-lg text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--foreground)]/50 py-3 px-4 text-sm font-serif transition-colors"
 
   return (
     <div className="w-full">
-      {/* Tabs — Space Grotesk small caps */}
       <div className="flex gap-6 mb-8">
         {(["login", "signup"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => { setTab(t); setError(null); setSuccess(null) }}
             className={[
-              "font-sans text-xs tracking-[0.3em] uppercase transition-colors pb-1 text-editorial",
+              "font-sans text-xs tracking-[0.3em] uppercase transition-colors pb-1",
               tab === t
-                ? "text-[var(--film-cream)] border-b border-[var(--film-gold)]"
-                : "text-[var(--film-dusk)] hover:text-[var(--film-cream)]",
+                ? "text-[var(--foreground)] border-b border-[var(--foreground)]"
+                : "text-[var(--muted)] hover:text-[var(--foreground)]",
             ].join(" ")}
           >
             {t === "login" ? "Sign in" : "Create account"}
@@ -69,7 +68,7 @@ export function AuthForm() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div>
-          <label className="block font-sans text-[10px] tracking-[0.4em] uppercase text-[var(--film-dusk)] mb-2 text-editorial">
+          <label className="block font-sans text-[10px] tracking-[0.4em] uppercase text-[var(--muted)] mb-2">
             Email
           </label>
           <input
@@ -84,7 +83,7 @@ export function AuthForm() {
         </div>
 
         <div>
-          <label className="block font-sans text-[10px] tracking-[0.4em] uppercase text-[var(--film-dusk)] mb-2 text-editorial">
+          <label className="block font-sans text-[10px] tracking-[0.4em] uppercase text-[var(--muted)] mb-2">
             Password
           </label>
           <input
@@ -100,20 +99,19 @@ export function AuthForm() {
         </div>
 
         {error && (
-          <p className="font-sans text-xs text-red-200 tracking-wide text-editorial">{error}</p>
+          <p className="font-serif text-xs text-red-700 tracking-wide">{error}</p>
         )}
         {success && (
-          <p className="font-sans text-xs text-[var(--film-gold)] tracking-wide text-editorial">{success}</p>
+          <p className="font-serif text-xs text-[var(--accent)] tracking-wide">{success}</p>
         )}
 
-        {/* Submit — Cormorant italic for elegance */}
         <button
           type="submit"
           disabled={loading}
-          className="text-left font-serif text-xl text-[var(--film-cream)] hover:text-[var(--film-gold)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-3 mt-2 text-editorial"
+          className="text-left font-sans text-lg text-[var(--foreground)] hover:text-[var(--accent)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-3 mt-2"
         >
           <span>{loading ? "…" : tab === "login" ? "Enter" : "Create account"}</span>
-          {!loading && <span className="font-sans text-sm font-normal not-italic text-[var(--film-gold)]">→</span>}
+          {!loading && <span className="text-[var(--muted)]">→</span>}
         </button>
       </form>
     </div>

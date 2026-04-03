@@ -11,9 +11,9 @@ export async function POST() {
 
   try {
     const client_secret = await createRealtimeToken()
-    return Response.json({ client_secret })
+    return Response.json({ client_secret, valid: true })
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error"
-    return Response.json({ error: message }, { status: 500 })
+    return Response.json({ error: message, valid: false }, { status: 500 })
   }
 }

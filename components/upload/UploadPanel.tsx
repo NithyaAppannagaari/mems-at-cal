@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { ImageDropzone } from "./ImageDropzone"
-import { HumRecorder } from "./HumRecorder"
 import { SongResult } from "./SongResult"
 import type { Memory, SongIdentificationResult } from "@/types"
 
@@ -18,12 +17,20 @@ export function UploadPanel({ onMemoryCreated }: UploadPanelProps) {
   const [error, setError] = useState<string | null>(null)
   const [title, setTitle] = useState("")
 
+  // Revoke object URL on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl)
+    }
+  }, [previewUrl])
+
   const handleFileSelected = useCallback((file: File) => {
     setImageFile(file)
     setPreviewUrl(URL.createObjectURL(file))
   }, [])
 
-  const handleSongIdentified = useCallback(async (result: SongIdentificationResult) => {
+  // Single handler for both hum identification and manual override
+  const handleSongResult = useCallback(async (result: SongIdentificationResult) => {
     if (result.song_name && result.artist) {
       try {
         const res = await fetch("/api/spotify", {
@@ -41,23 +48,13 @@ export function UploadPanel({ onMemoryCreated }: UploadPanelProps) {
     }
   }, [])
 
-  const handleSongOverride = useCallback(async (result: SongIdentificationResult) => {
-    if (result.song_name && result.artist) {
-      try {
-        const res = await fetch("/api/spotify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ song_name: result.song_name, artist: result.artist }),
-        })
-        const data = await res.json()
-        setSongResult({ ...result, spotify_embed_url: data.spotify_embed_url ?? null })
-      } catch {
-        setSongResult(result)
-      }
-    } else {
-      setSongResult(result)
-    }
-  }, [])
+  function clearForm() {
+    setImageFile(null)
+    setPreviewUrl(null)
+    setSongResult(null)
+    setTitle("")
+    setError(null)
+  }
 
   async function handleSave() {
     if (!imageFile) return
@@ -79,12 +76,7 @@ export function UploadPanel({ onMemoryCreated }: UploadPanelProps) {
       }
       const { memory } = await res.json()
       onMemoryCreated(memory)
-
-      setImageFile(null)
-      if (previewUrl) URL.revokeObjectURL(previewUrl)
-      setPreviewUrl(null)
-      setSongResult(null)
-      setTitle("")
+      clearForm()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed")
     } finally {
@@ -92,70 +84,47 @@ export function UploadPanel({ onMemoryCreated }: UploadPanelProps) {
     }
   }
 
-  function handleReset() {
-    setImageFile(null)
-    if (previewUrl) URL.revokeObjectURL(previewUrl)
-    setPreviewUrl(null)
-    setSongResult(null)
-    setTitle("")
-    setError(null)
-  }
-
   return (
     <div className="w-full flex flex-col gap-5">
-      {/* Title input */}
       <input
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="add a memory"
         maxLength={80}
-        className="font-serif text-3xl text-[var(--film-cream)] bg-transparent border-0 border-b border-[var(--film-cream)]/25 focus:border-[var(--film-cream)]/60 focus:outline-none placeholder:text-[var(--film-dusk)] transition-colors w-full pb-1 text-editorial"
+        className="font-sans text-2xl text-[var(--foreground)] bg-transparent border-0 border-b border-[var(--border)] focus:border-[var(--foreground)]/50 focus:outline-none placeholder:text-[var(--muted)] transition-colors w-full pb-1"
       />
 
-      {/* Image */}
       <ImageDropzone onFileSelected={handleFileSelected} previewUrl={previewUrl} />
 
-      {/* Audio + song — only after image is selected */}
       {imageFile && (
         <div className="flex flex-col gap-4">
-          <div className="h-px bg-[var(--film-sepia)]/15" />
+          <div className="h-px bg-[var(--border)]" />
 
-          <div className="flex flex-col items-center gap-3">
-            <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-[var(--film-dusk)] text-center">
-              hum the melody — or skip
-            </p>
-            <HumRecorder onSongIdentified={handleSongIdentified} disabled={uploading} />
-          </div>
-
-          {songResult && (
-            <SongResult result={songResult} onOverride={handleSongOverride} />
-          )}
+          <SongResult result={songResult} onOverride={handleSongResult} />
         </div>
       )}
 
       {error && (
-        <p className="font-sans text-xs text-red-400/80 tracking-wide">
-          {error}
-        </p>
+        <p className="font-serif text-xs text-red-700 tracking-wide">{error}</p>
       )}
 
       {imageFile && (
         <div className="flex items-center justify-between pt-1">
           <button
-            onClick={handleReset}
+            onClick={clearForm}
             disabled={uploading}
-            className="font-sans text-[10px] tracking-[0.3em] uppercase text-[var(--film-dusk)] hover:text-[var(--film-cream)] transition-colors disabled:opacity-40"
+            className="font-sans text-[10px] tracking-[0.3em] uppercase text-[var(--muted)] hover:text-[var(--foreground)] transition-colors disabled:opacity-40"
           >
             Discard
           </button>
           <button
             onClick={handleSave}
             disabled={uploading}
-            className="font-sans text-sm text-[var(--film-cream)] hover:text-[var(--film-gold)] transition-colors disabled:opacity-40 flex items-center gap-2"
+            className="font-sans text-sm text-[var(--foreground)] hover:text-[var(--accent)] transition-colors disabled:opacity-40 flex items-center gap-2"
           >
             <span>{uploading ? "Saving…" : "Save memory"}</span>
-            {!uploading && <span className="text-[var(--film-sepia)]">→</span>}
+            {!uploading && <span className="text-[var(--muted)]">→</span>}
           </button>
         </div>
       )}

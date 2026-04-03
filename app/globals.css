@@ -1,82 +1,70 @@
 @import "tailwindcss";
 
 :root {
-  --background: #6E8A9E;
-  --background-brown: #A67C52;
-  --background-green: #5F6F52;
-  --foreground: #FFF8DC;
-  --film-cream: #FFF8DC;
-  --film-gold: #D6C089;
-  --film-sepia: #A67C52;
-  --film-shadow: #FFF8DC;
-  /* dusk text is readable on all three background tones */
-  --film-mist: rgba(255, 248, 220, 0.18);
-  --film-dusk: rgba(255, 248, 220, 0.82);
-  --film-warm: #D6C089;
-  --film-blue-gray: #6E8A9E;
-  --film-green: #5F6F52;
+  --background: #C0DDDA;
+  --foreground: #775537;
+  --box-bg: #fff8e1;
+  --accent: #775537;
+  --muted: rgba(119, 85, 55, 0.55);
+  --border: rgba(119, 85, 55, 0.25);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-film-cream: var(--film-cream);
-  --color-film-sepia: var(--film-sepia);
-  --color-film-shadow: var(--film-shadow);
-  --color-film-mist: var(--film-mist);
-  --color-film-gold: var(--film-gold);
-  --color-film-dusk: var(--film-dusk);
-  --color-film-warm: var(--film-warm);
-  --font-sans: var(--font-space-grotesk);
-  --font-serif: var(--font-cormorant);
-  --font-script: var(--font-great-vibes);
+  --color-box-bg: var(--box-bg);
+  --color-accent: var(--accent);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --font-sans: var(--font-afacad), sans-serif;
+  --font-serif: var(--font-afacad), sans-serif;
+  --font-script: var(--font-afacad), sans-serif;
 }
 
 body {
-  background: linear-gradient(160deg, #6E8A9E 0%, #637A65 42%, #A67C52 100%);
-  background-attachment: fixed;
+  background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), sans-serif;
-  font-weight: 500;
-}
-
-/* Cormorant: dramatic bold italic */
-.font-serif {
-  font-style: italic;
-  font-weight: 800;
-  font-family: var(--font-cormorant), Georgia, serif;
-}
-
-/* Great Vibes script accent */
-.font-script {
-  font-family: var(--font-great-vibes), cursive;
-  font-style: normal;
+  font-family: var(--font-afacad), sans-serif;
   font-weight: 400;
 }
 
-/* Gentle text-shadow so all text pops on any point of the gradient */
-.text-editorial {
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+/* Strong — headings, labels */
+.font-sans {
+  font-family: var(--font-afacad), sans-serif;
+  font-style: normal;
+  font-weight: 700;
 }
 
-/* Filmy treatment — no darkening */
+/* Italic — titles, emotional text */
+.font-serif {
+  font-family: var(--font-afacad), sans-serif;
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Light italic — accents */
+.font-script {
+  font-family: var(--font-afacad), sans-serif;
+  font-style: italic;
+  font-weight: 300;
+}
+
+/* Subtle filmy treatment */
 .film-image {
-  filter: sepia(0.15) contrast(1.04) saturate(0.95);
+  filter: sepia(0.08) contrast(1.03) saturate(0.97);
 }
 
-/* Warm glow behind each memory card */
+/* Photo card */
 .card-glow {
-  background: rgba(255, 248, 220, 0.07);
+  background: #fff8e1;
   border-radius: 16px;
   box-shadow:
-    0 6px 36px rgba(166, 124, 82, 0.28),
-    0 1px 6px rgba(110, 138, 158, 0.18),
-    inset 0 0 0 1px rgba(255, 248, 220, 0.1);
+    0 4px 24px rgba(119, 85, 55, 0.12),
+    0 1px 4px rgba(119, 85, 55, 0.08);
   padding: 10px;
   padding-bottom: 14px;
 }
 
-/* Fade in for new cards */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }

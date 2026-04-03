@@ -79,8 +79,53 @@ export async function POST(request: Request) {
     .single()
 
   if (insertError) {
+    await supabase.storage.from("memory-images").remove([path])
     return Response.json({ error: insertError.message }, { status: 500 })
   }
 
   return Response.json({ memory: memory as Memory }, { status: 201 })
+}
+
+export async function DELETE(request: Request) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const { id } = await request.json()
+  if (!id) return Response.json({ error: "id is required" }, { status: 400 })
+
+  // Fetch the memory first to get the image path
+  const { data: memory, error: fetchError } = await supabase
+    .from("memories")
+    .select("image_url")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single()
+
+  if (fetchError || !memory) {
+    return Response.json({ error: "Memory not found" }, { status: 404 })
+  }
+
+  // Delete storage object
+  const url = new URL(memory.image_url)
+  const storagePath = url.pathname.split("/memory-images/")[1]
+  if (storagePath) {
+    await supabase.storage.from("memory-images").remove([storagePath])
+  }
+
+  // Delete DB row
+  const { error: deleteError } = await supabase
+    .from("memories")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id)
+
+  if (deleteError) {
+    return Response.json({ error: deleteError.message }, { status: 500 })
+  }
+
+  return Response.json({ ok: true })
 }

@@ -4,7 +4,7 @@ export function Spinner({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "w-5 h-5 rounded-full border border-[var(--film-sepia)]/20 border-t-[var(--film-sepia)]/70 animate-spin",
+        "w-5 h-5 rounded-full border border-[var(--border)] border-t-[var(--foreground)]/60 animate-spin",
         className
       )}
       role="status"

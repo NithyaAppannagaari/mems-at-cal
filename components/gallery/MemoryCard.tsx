@@ -1,8 +1,10 @@
 "use client"
 
 import Image from "next/image"
+import { useState } from "react"
 import { SpotifyEmbed } from "./SpotifyEmbed"
 import { usePlayback } from "@/hooks/usePlayback"
+import { useMemories } from "@/hooks/useMemories"
 import type { Memory } from "@/types"
 
 interface MemoryCardProps {
@@ -19,10 +21,43 @@ function formatDate(iso: string) {
 
 export function MemoryCard({ memory }: MemoryCardProps) {
   const { activeMemoryId, setActiveMemory } = usePlayback()
+  const { removeMemory } = useMemories()
+  const [deleting, setDeleting] = useState(false)
   const isPlaying = activeMemoryId === memory.id
 
+  async function handleDelete() {
+    setDeleting(true)
+    try {
+      const res = await fetch("/api/memories", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: memory.id }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        console.error("Delete failed:", data.error)
+        setDeleting(false)
+        return
+      }
+      removeMemory(memory.id)
+    } catch (err) {
+      console.error("Delete error:", err)
+      setDeleting(false)
+    }
+  }
+
   return (
-    <article className="flex flex-col gap-3 fade-up card-glow">
+    <article className="relative flex flex-col gap-3 fade-up card-glow group/card">
+      {/* Delete button */}
+      <button
+        onClick={handleDelete}
+        disabled={deleting}
+        className="absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-[var(--background)] text-[var(--foreground)] text-xs font-bold flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity hover:bg-[var(--foreground)] hover:text-[var(--box-bg)] disabled:opacity-40"
+        aria-label="Delete memory"
+      >
+        ×
+      </button>
+
       {/* Image */}
       <div className="w-full overflow-hidden rounded-xl">
         <Image
@@ -38,42 +73,35 @@ export function MemoryCard({ memory }: MemoryCardProps) {
       {/* Caption */}
       <div className="px-1 flex flex-col gap-2">
 
-        {/* Title — primary serif (Cormorant bold italic) */}
         {memory.title && (
-          <p className="font-serif text-2xl text-[var(--film-cream)] leading-tight text-editorial">
+          <p className="font-sans text-xl text-[var(--foreground)] leading-tight">
             {memory.title}
           </p>
         )}
 
-        {/* Song name — script font (Great Vibes) for emotional tone */}
         {memory.song_name && (
-          <p
-            className="font-script text-[var(--film-gold)] leading-none text-editorial"
-            style={{ fontSize: "1.45rem" }}
-          >
+          <p className="font-serif text-[var(--accent)] leading-snug" style={{ fontSize: "1.1rem" }}>
             ♪ {memory.song_name}
             {memory.artist && (
-              <span className="font-sans text-xs font-medium not-italic text-[var(--film-dusk)] ml-2 tracking-wide">
+              <span className="font-script text-xs text-[var(--muted)] ml-2">
                 — {memory.artist}
               </span>
             )}
           </p>
         )}
 
-        {/* Date — utility sans, small caps */}
-        <p className="font-sans text-xs tracking-[0.22em] uppercase text-[var(--film-dusk)] text-editorial">
+        <p className="font-sans text-xs tracking-[0.22em] uppercase text-[var(--muted)]">
           {formatDate(memory.created_at)}
         </p>
 
-        {/* Spotify */}
         {memory.spotify_embed_url && (
           <div>
             <button
               onClick={() => setActiveMemory(isPlaying ? null : memory.id)}
-              className="font-sans text-xs tracking-[0.18em] uppercase text-[var(--film-dusk)] hover:text-[var(--film-cream)] transition-colors flex items-center gap-2 py-0.5 text-editorial"
+              className="font-sans text-xs tracking-[0.18em] uppercase text-[var(--muted)] hover:text-[var(--foreground)] transition-colors flex items-center gap-2 py-0.5"
               aria-label={isPlaying ? "Pause" : "Play song"}
             >
-              <span className="text-[var(--film-sepia)] text-base">{isPlaying ? "▪" : "▶"}</span>
+              <span className="text-[var(--accent)] text-base">{isPlaying ? "▪" : "▶"}</span>
               {isPlaying ? "Now playing" : "Play on Spotify"}
             </button>
             {isPlaying && (
@@ -86,8 +114,7 @@ export function MemoryCard({ memory }: MemoryCardProps) {
           </div>
         )}
 
-        {/* Comment — serif italic for romantic/emotional tone */}
-        <div className="flex items-start gap-2.5 pt-2 border-t border-[var(--film-cream)]/10">
+        <div className="flex items-start gap-2.5 pt-2 border-t border-[var(--border)]">
           <div className="relative w-5 h-5 rounded-full overflow-hidden flex-shrink-0 mt-1 opacity-80">
             <Image
               src={memory.commenter_avatar_url}
@@ -99,11 +126,10 @@ export function MemoryCard({ memory }: MemoryCardProps) {
             />
           </div>
           <div className="flex-1 min-w-0">
-            <span className="font-sans text-[10px] tracking-[0.22em] uppercase text-[var(--film-dusk)] text-editorial">
+            <span className="font-sans text-[10px] tracking-[0.22em] uppercase text-[var(--muted)]">
               {memory.commenter_name}
             </span>
-            {/* Comment in serif italic — alternating from the name above */}
-            <p className="font-serif text-sm text-[var(--film-dusk)] mt-0.5 leading-snug text-editorial" style={{ fontWeight: 400 }}>
+            <p className="font-serif text-sm text-[var(--foreground)]/70 mt-0.5 leading-snug">
               {memory.comment_text}
             </p>
           </div>

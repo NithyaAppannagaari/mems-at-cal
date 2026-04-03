@@ -8,6 +8,7 @@ interface MemoriesState {
   loading: boolean
   error: string | null
   addMemory: (memory: Memory) => void
+  removeMemory: (id: string) => void
   refresh: () => Promise<void>
 }
 
@@ -37,12 +38,16 @@ export function MemoriesProvider({ children }: { children: React.ReactNode }) {
     setMemories((prev) => [memory, ...prev])
   }, [])
 
+  const removeMemory = useCallback((id: string) => {
+    setMemories((prev) => prev.filter((m) => m.id !== id))
+  }, [])
+
   useEffect(() => {
     refresh()
   }, [refresh])
 
   return (
-    <MemoriesContext.Provider value={{ memories, loading, error, addMemory, refresh }}>
+    <MemoriesContext.Provider value={{ memories, loading, error, addMemory, removeMemory, refresh }}>
       {children}
     </MemoriesContext.Provider>
   )

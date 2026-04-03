@@ -69,14 +69,15 @@ export function ImageDropzone({ onFileSelected, previewUrl }: ImageDropzoneProps
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}
       onClick={() => inputRef.current?.click()}
-      className="w-full aspect-[4/3] rounded-xl border border-dashed border-[var(--film-cream)]/40 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-[var(--film-cream)]/70 transition-colors group"
+      className="w-full aspect-[4/3] rounded-xl border border-dashed border-[var(--border)] flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-[var(--foreground)]/40 hover:brightness-95 transition-all"
+      style={{ background: "#fff8e1" }}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
       aria-label="Upload a photo"
     >
-      <p className="font-sans text-[10px] tracking-[0.35em] uppercase text-[var(--film-cream)]/70 group-hover:text-[var(--film-cream)] transition-colors text-editorial">
-        Upload a new memory
+      <p className="font-sans text-base font-bold tracking-wide text-[var(--foreground)]">
+        upload a new memory
       </p>
       <input
         ref={inputRef}

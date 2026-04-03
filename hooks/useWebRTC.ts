@@ -5,121 +5,122 @@ import type { SongIdentificationResult } from "@/types"
 
 type Status = "idle" | "connecting" | "listening" | "identifying" | "done" | "error"
 
+export interface WebRTCLog {
+  ts: number
+  text: string
+  type: "info" | "success" | "error"
+}
+
+const NULL_RESULT: SongIdentificationResult = { song_name: null, artist: null, spotify_embed_url: null }
+
 interface UseWebRTCReturn {
   status: Status
+  logs: WebRTCLog[]
   start: () => Promise<void>
-  stop: () => void
-  error: string | null
+  stopAudio: () => void
+  cancel: () => void
 }
 
 export function useWebRTC(
   onResult: (result: SongIdentificationResult) => void
 ): UseWebRTCReturn {
   const [status, setStatus] = useState<Status>("idle")
-  const [error, setError] = useState<string | null>(null)
+  const [logs, setLogs] = useState<WebRTCLog[]>([])
 
-  const pcRef = useRef<RTCPeerConnection | null>(null)
-  const dcRef = useRef<RTCDataChannel | null>(null)
+  const recorderRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
   const streamRef = useRef<MediaStream | null>(null)
+  const cancelledRef = useRef(false)
 
-  const stop = useCallback(() => {
-    dcRef.current?.close()
+  function pushLog(text: string, type: WebRTCLog["type"] = "info") {
+    setLogs((prev) => [...prev, { ts: Date.now(), text, type }])
+  }
+
+  const cancel = useCallback(() => {
+    cancelledRef.current = true
+    recorderRef.current?.stop()
     streamRef.current?.getTracks().forEach((t) => t.stop())
-    pcRef.current?.close()
-    dcRef.current = null
+    recorderRef.current = null
     streamRef.current = null
-    pcRef.current = null
+    chunksRef.current = []
     setStatus("idle")
+    setLogs([])
   }, [])
 
+  const stopAudio = useCallback(() => {
+    if (status !== "listening") return
+    recorderRef.current?.stop()
+  }, [status])
+
   const start = useCallback(async () => {
+    cancelledRef.current = false
     setStatus("connecting")
-    setError(null)
+    setLogs([])
 
     try {
-      // 1. Fetch ephemeral token from our server
-      const tokenRes = await fetch("/api/realtime-token", { method: "POST" })
-      if (!tokenRes.ok) throw new Error("Failed to get realtime token")
-      const { client_secret } = await tokenRes.json()
-
-      // 2. Create peer connection
-      const pc = new RTCPeerConnection()
-      pcRef.current = pc
-
-      // 3. Data channel (must be created before offer)
-      const dc = pc.createDataChannel("oai-events")
-      dcRef.current = dc
-
-      dc.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data)
-
-          if (msg.type === "response.done") {
-            setStatus("done")
-            const textContent = msg.response?.output?.[0]?.content?.find(
-              (c: { type: string }) => c.type === "text"
-            )
-            if (textContent?.text) {
-              const parsed = JSON.parse(textContent.text) as {
-                song_name: string | null
-                artist: string | null
-              }
-              onResult({ ...parsed, spotify_embed_url: null })
-            } else {
-              onResult({ song_name: null, artist: null, spotify_embed_url: null })
-            }
-            stop()
-          } else if (msg.type === "input_audio_buffer.speech_started") {
-            setStatus("listening")
-          } else if (msg.type === "response.creating") {
-            setStatus("identifying")
-          }
-        } catch {
-          // ignore non-JSON messages
-        }
-      }
-
-      dc.onerror = () => {
-        setError("Connection error. Please try again.")
-        setStatus("error")
-        stop()
-      }
-
-      // 4. Get microphone
+      pushLog("Requesting microphone access…")
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream))
+      pushLog("Microphone ready — start humming", "success")
 
-      // 5. Create SDP offer
-      const offer = await pc.createOffer()
-      await pc.setLocalDescription(offer)
+      const recorder = new MediaRecorder(stream)
+      recorderRef.current = recorder
+      chunksRef.current = []
 
-      // 6. Send offer to OpenAI Realtime
-      const sdpRes = await fetch(
-        "https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${client_secret}`,
-            "Content-Type": "application/sdp",
-          },
-          body: offer.sdp,
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data)
+      }
+
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop())
+
+        // Don't identify if the user cancelled
+        if (cancelledRef.current) return
+
+        setStatus("identifying")
+        pushLog("Recording stopped — sending to OpenAI…")
+
+        try {
+          const blob = new Blob(chunksRef.current, { type: recorder.mimeType })
+          const arrayBuffer = await blob.arrayBuffer()
+          const bytes = new Uint8Array(arrayBuffer)
+          let binary = ""
+          for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
+          const audio = btoa(binary)
+          const format = recorder.mimeType.split("/")[1]?.split(";")[0] ?? "webm"
+
+          pushLog("Identifying song…")
+          const res = await fetch("/api/identify-song", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ audio, format }),
+          })
+
+          const data = await res.json()
+          if (data.song_name) {
+            pushLog(`Found: "${data.song_name}" by ${data.artist}`, "success")
+            onResult({ song_name: data.song_name, artist: data.artist, spotify_embed_url: null })
+          } else {
+            pushLog("Could not identify the song", "error")
+            onResult(NULL_RESULT)
+          }
+          setStatus("done")
+        } catch {
+          pushLog("Identification failed — enter song manually", "error")
+          onResult(NULL_RESULT)
+          setStatus("idle")
         }
-      )
+      }
 
-      if (!sdpRes.ok) throw new Error("OpenAI WebRTC handshake failed")
-
-      const answerSdp = await sdpRes.text()
-      await pc.setRemoteDescription({ type: "answer", sdp: answerSdp })
-
+      recorder.start()
       setStatus("listening")
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error"
-      setError(msg)
-      setStatus("error")
-      stop()
+      pushLog("Recording — hum or sing the melody", "success")
+    } catch {
+      pushLog("Microphone access denied", "error")
+      onResult(NULL_RESULT)
+      setStatus("idle")
     }
-  }, [onResult, stop])
+  }, [onResult])
 
-  return { status, start, stop, error }
+  return { status, logs, start, stopAudio, cancel }
 }

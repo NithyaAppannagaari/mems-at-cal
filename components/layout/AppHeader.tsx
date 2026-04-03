@@ -16,17 +16,17 @@ export function AppHeader() {
   return (
     <header
       className="fixed top-0 z-40 w-full pointer-events-none"
-      style={{ background: "linear-gradient(to bottom, rgba(110,138,158,0.92) 0%, transparent 100%)" }}
+      style={{ background: "linear-gradient(to bottom, rgba(192,221,218,0.96) 0%, transparent 100%)" }}
     >
-      <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between pointer-events-auto">
-        <h1 className="font-serif text-2xl text-[var(--film-cream)] tracking-tight text-editorial">
+      <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between pointer-events-auto">
+        <h1 className="font-sans text-2xl text-[var(--foreground)] tracking-tight">
           memories @ cal
         </h1>
         <button
           onClick={handleLogout}
-          className="font-sans text-xs tracking-[0.35em] uppercase text-[var(--film-dusk)] hover:text-[var(--film-cream)] transition-colors text-editorial"
+          className="font-sans text-2xl font-bold tracking-tight text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
         >
-          Exit
+          exit
         </button>
       </div>
     </header>
